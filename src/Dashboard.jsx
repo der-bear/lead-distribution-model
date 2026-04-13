@@ -43,19 +43,41 @@ const StatBar = ({ label, value, color, barPct }) => (
   </div>
 );
 
-const CustomTooltip = ({ active, payload, label }) => {
+const CustomTooltip = ({ active, payload, label, labelFormatter }) => {
   if (!active || !payload?.length) return null;
+  const fmtLabel = labelFormatter ? labelFormatter(label) : label;
+  const fmtVal = (p) => {
+    if (typeof p.value !== 'number') return p.value;
+    if (p.dataKey?.endsWith('_pct') || p.name?.match(/margin/i)) return `${p.value}%`;
+    if (p.name?.match(/revenue|cost|profit/i)) return fmtFull(p.value);
+    return fmtNum(p.value);
+  };
   return (
-    <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-3 text-sm">
-      <div className="font-semibold text-gray-700 mb-1">{label}</div>
+    <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-2.5 text-xs">
+      <div className="font-semibold text-gray-700 mb-1">{fmtLabel}</div>
       {payload.map((p,i) => (
-        <div key={i} className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full" style={{backgroundColor:p.color}}/>
+        <div key={i} className="flex items-center gap-1.5">
+          <div className="w-1.5 h-1.5 rounded-full" style={{backgroundColor:p.color}}/>
           <span className="text-gray-600">{p.name}:</span>
-          <span className="font-medium">{typeof p.value==='number' ? (p.name.match(/revenue|cost|profit/i) ? fmtFull(p.value) : fmtNum(p.value)) : p.value}</span>
+          <span className="font-medium">{fmtVal(p)}</span>
         </div>
       ))}
     </div>
+  );
+};
+
+const InfoTip = ({ text }) => {
+  const [show, setShow] = useState(false);
+  return (
+    <span className="relative inline-flex items-center ml-1.5" onMouseEnter={()=>setShow(true)} onMouseLeave={()=>setShow(false)}>
+      <svg className="w-3.5 h-3.5 text-gray-300 hover:text-gray-500 transition-colors cursor-help" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <circle cx="12" cy="12" r="10"/><path d="M12 16v-4m0-4h.01"/>
+      </svg>
+      {show&&<div className="absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-2 w-52 px-3 py-2 text-xs text-gray-600 bg-white border border-gray-200 rounded-lg shadow-lg leading-relaxed pointer-events-none">
+        {text}
+        <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-px border-4 border-transparent border-t-gray-200"/>
+      </div>}
+    </span>
   );
 };
 
@@ -226,6 +248,7 @@ export default function LeadStreamDashboard() {
   }),[chartData]);
   const [pipelineTab, setPipelineTab] = useState('both');
   const [hovTip, setHovTip] = useState(null);
+  const [hovSankey, setHovSankey] = useState(null);
   const sortedVerts = useMemo(()=>[...uniqueVerts].sort((a,b)=>b.revenue-a.revenue),[uniqueVerts]);
 
   const sankey = useMemo(() => {
@@ -278,7 +301,7 @@ export default function LeadStreamDashboard() {
       const sx=s.x+nW,sy=s.outY,tx=t.x,ty=t.inY;
       s.outY+=l.h;t.inY+=l.h;
       const cx=(sx+tx)/2;
-      return{d:`M${sx},${sy} C${cx},${sy} ${cx},${ty} ${tx},${ty} L${tx},${ty+l.h} C${cx},${ty+l.h} ${cx},${sy+l.h} ${sx},${sy+l.h} Z`,c:l.c,v:l.v};
+      return{d:`M${sx},${sy} C${cx},${sy} ${cx},${ty} ${tx},${ty} L${tx},${ty+l.h} C${cx},${ty+l.h} ${cx},${sy+l.h} ${sx},${sy+l.h} Z`,c:l.c,v:l.v,s:l.s,t:l.t};
     });
     return{W,H,nW,nodes:Object.values(nodes),links,colX,received:T.leads_received};
   },[T]);
@@ -324,40 +347,40 @@ export default function LeadStreamDashboard() {
 
   return (<>
     <div className="min-h-screen bg-gray-50">
-      <div className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-4">
+      <div className="bg-white border-b border-gray-200 px-4 md:px-6 py-3 flex items-center justify-between gap-4">
+        <div className="flex items-center gap-4 min-w-0">
           <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center"><span className="text-white font-bold text-sm">LS</span></div>
           <div className="leading-tight">
             <h1 className="text-lg font-semibold text-gray-800 mb-0">Lead Distribution Model</h1>
             <span className="text-[10px] text-gray-400 -mt-0.5 block">Demo data: {fmtDate(DD.dates[0])} – {fmtDate(DD.dates[DD.dates.length-1])}</span>
           </div>
         </div>
-        <div className="flex items-center gap-3 text-sm text-gray-500">
+        <div className="hidden md:flex items-center gap-3 text-sm text-gray-500 shrink-0">
           <span>30 Sources</span><span className="text-gray-300">|</span><span>50 Clients</span><span className="text-gray-300">|</span><span>10 Verticals</span>
         </div>
       </div>
 
-      <div className="bg-white border-b border-gray-200 px-6"><div className="flex gap-1">
+      <div className="bg-white border-b border-gray-200 px-4 md:px-6 overflow-x-auto"><div className="flex gap-1">
         {tabs.map(t=><button key={t.id} onClick={()=>setActiveTab(t.id)} className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${activeTab===t.id?'border-blue-500 text-blue-600':'border-transparent text-gray-500 hover:text-gray-700'}`}>{t.label}</button>)}
       </div></div>
 
-      <div className="p-6 max-w-screen-xl mx-auto">
+      <div className="p-3 md:p-6 max-w-screen-xl mx-auto">
 
       {activeTab==='dashboard'&&<div className="space-y-4">
         {/* ── Pipeline Sankey ── */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-          <div className="flex items-center justify-between mb-5">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-5">
             <div className="flex items-baseline gap-2">
-              <h2 className="text-lg font-semibold text-gray-800">Lead Pipeline</h2>
+              <h2 className="text-lg font-semibold text-gray-800">Lead Pipeline<InfoTip text="Visualizes where leads drop off from intake to sale. Use this to identify bottlenecks — high source rejection signals poor lead quality, high client rejection signals targeting issues."/></h2>
               <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs font-medium">{(()=>{const md=new Date(maxDate+'T00:00:00');const off={today:0,week:7,month:30,quarter:90,year:0}[chartRange];if(chartRange==='year')return `${fmtDate(DD.dates[0])} – ${fmtDate(maxDate)}`;if(chartRange==='today')return fmtDate(maxDate);const cut=new Date(md);cut.setDate(cut.getDate()-off);return `${fmtDate(cut.toISOString().slice(0,10))} – ${fmtDate(maxDate)}`;})()}</span>
             </div>
-            <div className="flex bg-gray-100 rounded-lg p-0.5">
+            <div className="flex bg-gray-100 rounded-lg p-0.5 shrink-0">
               {[['today','Today',true],['week','Last Week',false],['month','Last Month',false],['quarter','Last Quarter',false],['year','Last Year',false]].map(([k,label,disabled])=><button key={k} disabled={disabled} onClick={()=>setChartRange(k)} className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${disabled?'text-gray-300 cursor-not-allowed':chartRange===k?'bg-white shadow text-gray-800':'text-gray-500 hover:text-gray-700'}`}>{label}</button>)}
             </div>
           </div>
 
-<div className="relative">
-            <svg viewBox={`0 0 ${sankey.W} ${sankey.H}`} style={{width:'100%',height:'auto'}} className="overflow-visible">
+<div className="relative overflow-x-auto">
+            <svg viewBox={`0 0 ${sankey.W} ${sankey.H}`} style={{width:'100%',height:'auto',minWidth:'700px'}} className="overflow-visible">
               {/* Section backgrounds */}
               <rect x="0" y="0" width="438" height={sankey.H} rx="10" fill="#EEF2FF" opacity="0.35"/>
               <rect x="445" y="0" width="435" height={sankey.H} rx="10" fill="#ECFDF5" opacity="0.35"/>
@@ -370,11 +393,11 @@ export default function LeadStreamDashboard() {
               <line x1="442" y1="22" x2="442" y2={sankey.H - 10} stroke="#D1D5DB" strokeWidth="1" strokeDasharray="4 3"/>
 
               {/* Flow ribbons */}
-              {sankey.links.map((l,i)=><path key={i} d={l.d} fill={l.c}/>)}
+              {sankey.links.map((l,i)=>{const hs=hovSankey;const active=!hs||(hs.t==='link'&&hs.i===i)||(hs.t==='node'&&(l.s===hs.id||l.t===hs.id));return<path key={i} d={l.d} fill={l.c} opacity={active?1:0.12} style={{transition:'opacity 0.2s'}} onMouseEnter={()=>setHovSankey({t:'link',i,s:l.s,tt:l.t})} onMouseLeave={()=>setHovSankey(null)} className="cursor-pointer"/>})}
 
               {/* Nodes + labels */}
-              {sankey.nodes.map(n=>(
-                <g key={n.id}>
+              {sankey.nodes.map(n=>{const hs=hovSankey;const active=!hs||(hs.t==='node'&&(hs.id===n.id||sankey.links.some(l=>(l.s===hs.id||l.t===hs.id)&&(l.s===n.id||l.t===n.id))))||(hs.t==='link'&&(hs.s===n.id||hs.tt===n.id));return(
+                <g key={n.id} opacity={active?1:0.2} style={{transition:'opacity 0.2s'}} onMouseEnter={()=>setHovSankey({t:'node',id:n.id})} onMouseLeave={()=>setHovSankey(null)} className="cursor-pointer">
                   <rect x={n.x} y={n.y} width={sankey.nW} height={Math.max(n.h,3)} rx={4} fill={n.color} opacity={n.drop?0.85:1}/>
                   {n.h >= 18 ? (
                     <g>
@@ -389,7 +412,7 @@ export default function LeadStreamDashboard() {
                     </text>
                   )}
                 </g>
-              ))}
+              )})}
 
               {/* Column phase labels */}
               <text x={sankey.colX[0]+sankey.nW/2} y={sankey.H-4} textAnchor="middle" fontSize="9" fontWeight="600" fill="#C7D2FE" style={{letterSpacing:'0.05em'}}>RECEIVED</text>
@@ -400,7 +423,7 @@ export default function LeadStreamDashboard() {
           </div>
 
           {/* Financial KPIs + Unit Economics */}
-          <div className="grid grid-cols-6 gap-1.5 mt-5 pt-4 border-t border-gray-100">
+          <div className="grid grid-cols-3 md:grid-cols-6 gap-1.5 mt-5 pt-4 border-t border-gray-100">
             <div className="text-center">
               <div className="text-[10px] text-gray-400 uppercase tracking-wide">Revenue</div>
               <div className="text-lg font-bold text-gray-800 mt-0.5">{fmt(T.revenue)}</div>
@@ -437,9 +460,9 @@ export default function LeadStreamDashboard() {
         </div>
 
         {/* Revenue & Pipeline Charts — side by side */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-            <h2 className="text-base font-semibold text-gray-800 mb-3">Revenue, Profit & Margin</h2>
+            <h2 className="text-base font-semibold text-gray-800 mb-3">Revenue, Profit & Margin<InfoTip text="Monitors financial health over time. A declining margin with rising revenue may indicate increasing acquisition costs or a shift toward lower-value verticals."/></h2>
             <ResponsiveContainer width="100%" height={260}>
               <ComposedChart data={enhancedData} margin={{top:5,right:10,bottom:5,left:10}}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0"/>
@@ -455,17 +478,17 @@ export default function LeadStreamDashboard() {
           </div>
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-base font-semibold text-gray-800">Pipeline Rates, %</h2>
+              <h2 className="text-base font-semibold text-gray-800">Pipeline Rates, %<InfoTip text="Tracks quality and reliability trends. Rising rejection rates signal deteriorating source quality; rising return rates suggest compliance or data issues that need investigation."/></h2>
               <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-0.5">
                 {['inbound','outbound','both'].map(t=><button key={t} onClick={()=>setPipelineTab(t)} className={`px-3 py-1 text-xs font-medium rounded-md transition-all capitalize ${pipelineTab===t?'bg-white text-gray-800 shadow-sm':'text-gray-500 hover:text-gray-700'}`}>{t}</button>)}
               </div>
             </div>
-            <ResponsiveContainer width="100%" height={260}>
-              <LineChart data={enhancedData} margin={{top:5,right:20,bottom:5,left:10}}>
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={enhancedData} margin={{top:5,right:20,bottom:25,left:10}}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0"/>
                 <XAxis dataKey={xKey} tick={{fontSize:11}} tickFormatter={xFmt} interval={xInt}/>
                 <YAxis tick={{fontSize:11}} tickFormatter={v=>`${v}%`} domain={[0,'auto']}/>
-                <Tooltip formatter={(v,name)=>[`${v}%`,name]} labelFormatter={xFmt}/><Legend wrapperStyle={{fontSize:11}}/>
+                <Tooltip content={<CustomTooltip labelFormatter={xFmt}/>}/><Legend wrapperStyle={{fontSize:11,paddingTop:8}}/>
                 {(pipelineTab==='inbound'||pipelineTab==='both')&&<Line type="monotone" dataKey="source_accept_pct" name="Accepted from Source" stroke="#3B82F6" strokeWidth={2} dot={{r:2}}/>}
                 {(pipelineTab==='inbound'||pipelineTab==='both')&&<Line type="monotone" dataKey="source_reject_pct" name="Rejected from Source" stroke="#EF4444" strokeWidth={2} dot={{r:2}}/>}
                 {(pipelineTab==='inbound'||pipelineTab==='both')&&<Line type="monotone" dataKey="return_pct" name="Returned to Source" stroke="#F97316" strokeWidth={2} dot={{r:2}}/>}
@@ -479,9 +502,9 @@ export default function LeadStreamDashboard() {
         </div>
 
         {/* Top Sources | Vertical Performance | Top Clients */}
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-            <h2 className="text-base font-semibold text-gray-800 mb-3">Top 10 Sources</h2>
+            <h2 className="text-base font-semibold text-gray-800 mb-3">Top 10 Sources<InfoTip text="Identifies concentration risk and profitability by source. Sources with high volume but low margin may need renegotiated terms or should be deprioritized."/></h2>
             <div className="space-y-0">
               <div className="flex items-center text-[9px] text-gray-400 uppercase tracking-wide pb-1.5 border-b border-gray-200 mb-1">
                 <span className="flex-1">Source</span>
@@ -511,7 +534,7 @@ export default function LeadStreamDashboard() {
           </div>
 
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-            <h2 className="text-base font-semibold text-gray-800 mb-3">Vertical Performance</h2>
+            <h2 className="text-base font-semibold text-gray-800 mb-3">Vertical Performance<InfoTip text="Compares revenue contribution vs margin across verticals. High-revenue verticals with thin margins may be worth less than smaller, high-margin niches."/></h2>
             <div className="space-y-0">
               <div className="flex items-center text-[9px] text-gray-400 uppercase tracking-wide pb-1.5 border-b border-gray-200 mb-1">
                 <span className="flex-1">Vertical</span>
@@ -546,7 +569,7 @@ export default function LeadStreamDashboard() {
           </div>
 
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-            <h2 className="text-base font-semibold text-gray-800 mb-3">Top 10 Clients</h2>
+            <h2 className="text-base font-semibold text-gray-800 mb-3">Top 10 Clients<InfoTip text="Shows client revenue concentration and reliability. Clients with high rejection rates cost money in wasted delivery — consider tightening targeting or adjusting terms."/></h2>
             <div className="space-y-0">
               <div className="flex items-center text-[9px] text-gray-400 uppercase tracking-wide pb-1.5 border-b border-gray-200 mb-1">
                 <span className="flex-1">Client</span>
@@ -575,9 +598,9 @@ export default function LeadStreamDashboard() {
         </div>
 
         {/* Source Type + Revenue by Vertical charts */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-            <h2 className="text-base font-semibold text-gray-800 mb-3">Volume by Source Type</h2>
+            <h2 className="text-base font-semibold text-gray-800 mb-3">Volume by Source Type<InfoTip text="Reveals channel mix over time. Heavy reliance on providers or affiliates increases cost risk — growing owned sources improves margin control."/></h2>
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={filteredByType} margin={{top:5,right:20,bottom:5,left:10}}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0"/>
@@ -590,7 +613,7 @@ export default function LeadStreamDashboard() {
             </ResponsiveContainer>
           </div>
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-            <h2 className="text-base font-semibold text-gray-800 mb-3">Revenue by Vertical</h2>
+            <h2 className="text-base font-semibold text-gray-800 mb-3">Revenue by Vertical<InfoTip text="Tracks vertical diversification. If one vertical dominates revenue, a market downturn there poses outsized risk to the business."/></h2>
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={[...uniqueVerts].sort((a,b)=>b.revenue-a.revenue)} layout="vertical" margin={{top:5,right:20,bottom:5,left:5}}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0"/>
@@ -608,7 +631,7 @@ export default function LeadStreamDashboard() {
 
       {/* ══════════ SOURCES TAB ══════════ */}
       {activeTab==='sources'&&<div className="space-y-4">
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {typeBreak.map(t=><div key={t.type} className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
             <div className="flex items-center gap-2 mb-2">
               <div className="w-3 h-3 rounded-full" style={{backgroundColor:TYPE_COLORS[t.type]}}/>
@@ -623,14 +646,14 @@ export default function LeadStreamDashboard() {
           </div>)}
         </div>
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">All Lead Sources</h2>
+          <h2 className="text-lg font-semibold text-gray-800 mb-4">All Lead Sources<InfoTip text="Full source breakdown for auditing quality and economics. Sort by margin to find underperformers, or by volume to assess dependency risk."/></h2>
           <SortableTable columns={sourceCols} data={sources} defaultSort="leads_received"/>
         </div>
       </div>}
 
       {/* ══════════ CLIENTS TAB ══════════ */}
       {activeTab==='clients'&&<div className="space-y-4">
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[{l:'Total Clients',v:clients.length,c:'text-gray-800'},
             {l:'Total Revenue',v:fmt(T.revenue),c:'text-green-600'},
             {l:'Avg Revenue/Client',v:fmt(T.revenue/clients.length),c:'text-blue-600'},
@@ -640,7 +663,7 @@ export default function LeadStreamDashboard() {
           </div>)}
         </div>
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">All Clients</h2>
+          <h2 className="text-lg font-semibold text-gray-800 mb-4">All Clients<InfoTip text="Complete client economics. Sort by margin to find your most and least profitable relationships, or by rejection rate to identify delivery issues."/></h2>
           <SortableTable columns={clientCols} data={clients} defaultSort="revenue"/>
         </div>
       </div>}
@@ -648,11 +671,11 @@ export default function LeadStreamDashboard() {
       {/* ══════════ VERTICALS TAB ══════════ */}
       {activeTab==='verticals'&&<div className="space-y-4">
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">Vertical Performance</h2>
+          <h2 className="text-lg font-semibold text-gray-800 mb-4">Vertical Performance<InfoTip text="Full vertical economics — sort by profit per lead to find where you make the most money, or by volume to see where you're most exposed."/></h2>
           <SortableTable columns={vertCols} data={uniqueVerts} defaultSort="revenue" pageSize={10}/>
         </div>
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">Monthly Revenue by Vertical</h2>
+          <h2 className="text-lg font-semibold text-gray-800 mb-4">Monthly Revenue by Vertical<InfoTip text="Reveals seasonal patterns and growth trends by vertical. Use this to plan capacity and budget allocation across verticals."/></h2>
           <ResponsiveContainer width="100%" height={350}>
             <BarChart data={(()=>{
               const ms=[...new Set(filteredByVertical.map(m=>m.month))].sort();
