@@ -1,0 +1,51 @@
+client_id,client_name,num_verticals,base_reject_rate,daily_cap,status
+1,Apex Financial Group,3,0.063,10,active
+2,BrightStar Insurance,1,0.07,30,active
+3,Capital Mortgage Co,2,0.082,15,paused
+4,Delta Solar Solutions,4,0.071,30,active
+5,Eagle Home Services,3,0.074,75,active
+6,Fairway Legal Group,2,0.087,100,active
+7,Granite Education Corp,2,0.073,15,active
+8,Harbor Health Plans,1,0.167,20,paused
+9,Ironclad Debt Relief,3,0.06,20,active
+10,Jade Tax Advisors,4,0.118,10,active
+11,KeyStone Insurance,3,0.103,75,paused
+12,Liberty Lending,2,0.178,40,paused
+13,Meridian Home Repair,2,0.065,75,active
+14,Nova Solar Power,3,0.102,100,active
+15,Oakridge Legal,2,0.176,30,active
+16,Pacific Education Online,3,0.163,20,active
+17,Quest Healthcare,2,0.156,30,active
+18,Redwood Financial,2,0.084,30,paused
+19,Summit Home Warranty,1,0.072,30,active
+20,Titan Tax Services,1,0.137,20,active
+21,United Coverage Corp,1,0.171,25,active
+22,Valor Mortgage Group,4,0.122,100,paused
+23,Westfield Home Svcs,4,0.124,100,active
+24,Xenon Solar Tech,4,0.086,15,paused
+25,Yellowstone Insurance,4,0.15,75,active
+26,Zenith Debt Solutions,2,0.074,75,paused
+27,Atlas Auto Coverage,1,0.092,50,paused
+28,Beacon Refi Partners,4,0.105,75,paused
+29,Crestview Home Improvement,2,0.116,20,active
+30,Daylight Solar Co,2,0.082,40,active
+31,Evergreen Legal Aid,1,0.065,10,paused
+32,Frontier Education,3,0.129,50,active
+33,GoldStar Health,1,0.088,10,active
+34,Highland Tax Group,3,0.126,100,active
+35,Imperial Insurance,2,0.07,10,active
+36,Jupiter Mortgage,2,0.113,10,active
+37,Kinetic Home Services,2,0.119,50,active
+38,Lighthouse Solar,2,0.057,15,active
+39,Magnolia Legal,3,0.094,30,active
+40,Northstar Education,2,0.067,75,active
+41,Omega Healthcare Plus,3,0.058,75,paused
+42,Patriot Financial,1,0.179,20,active
+43,Quantum Home Shield,2,0.092,50,active
+44,Rainier Tax Pro,1,0.155,20,active
+45,Sterling Insurance Co,4,0.083,40,active
+46,Trident Mortgage LLC,1,0.139,40,active
+47,Uplift Home Solutions,2,0.149,20,active
+48,Vertex Solar Energy,2,0.127,50,active
+49,Windsor Legal Partners,2,0.111,20,paused
+50,Zephyr Debt Counsel,2,0.104,75,active
